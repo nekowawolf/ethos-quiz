@@ -1,0 +1,495 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+
+interface Question {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+}
+
+interface QuizData {
+  easy: Question[];
+  medium: Question[];
+  hard: Question[];
+}
+
+const quizData: QuizData = {
+  easy: [
+    {
+      id: 1,
+      question: "What is Eth OS described as?",
+      options: ["A traditional exchange", "DeFi's largest gamified experiment", "A simple wallet"],
+      correctAnswer: "DeFi's largest gamified experiment"
+    },
+    {
+      id: 2,
+      question: "What is the main token of the Eth OS ecosystem?",
+      options: ["AIR", "ETH", "EOS"],
+      correctAnswer: "EOS"
+    },
+    {
+      id: 3,
+      question: "What token can you farm by saying GM daily?",
+      options: ["$AIR", "$BOOST", "$ETH"],
+      correctAnswer: "$AIR"
+    },
+    {
+      id: 4,
+      question: "How many gamified mechanics does Eth OS have?",
+      options: ["5", "7", "10"],
+      correctAnswer: "7"
+    },
+    {
+      id: 5,
+      question: "Do you need to stake or lock EOS to earn from the ecosystem?",
+      options: ["Yes", "No", "Only during farming events"],
+      correctAnswer: "No"
+    }
+  ],
+  medium: [
+    {
+      id: 1,
+      question: "What do tokens created within Eth OS pay back to EOS holders?",
+      options: ["BOOST", "Pure ETH reflections", "Additional AIR rewards"],
+      correctAnswer: "Pure ETH reflections"
+    },
+    {
+      id: 2,
+      question: "What internal token do you receive when burning EOS, and what is its use?",
+      options: ["AIR, for trading", "BOOST, for additional APY", "GM, for staking"],
+      correctAnswer: "BOOST, for additional APY"
+    },
+    {
+      id: 3,
+      question: "How long does each epoch last in the farming game?",
+      options: ["1 day", "3 days", "7 days"],
+      correctAnswer: "3 days"
+    },
+    {
+      id: 4,
+      question: "How many epochs are there in the Eth OS farming event?",
+      options: ["10", "11", "12"],
+      correctAnswer: "12"
+    },
+    {
+      id: 5,
+      question: "What makes boosted tokens stand out on the platform?",
+      options: ["They have higher volume", "They appear first and have a fancy glance", "They give free AIR airdrops"],
+      correctAnswer: "They appear first and have a fancy glance"
+    }
+  ],
+  hard: [
+    {
+      id: 1,
+      question: "What does EOS functionality include besides zero-tax?",
+      options: ["Share-increasing APY, volume-based reflections, utility burn", "Only staking rewards", "Just trading volume fees"],
+      correctAnswer: "Share-increasing APY, volume-based reflections, utility burn"
+    },
+    {
+      id: 2,
+      question: "What is the concept behind the \"recursive flywheel\" in Eth OS?",
+      options: ["Tokens burn themselves to increase supply", "Revenue from all tokens flows back to EOS holders, boosting the ecosystem", "Users must stake to earn APY"],
+      correctAnswer: "Revenue from all tokens flows back to EOS holders, boosting the ecosystem"
+    },
+    {
+      id: 3,
+      question: "What action allows you to receive BOOST and promote tokens within the Eth OS ecosystem?",
+      options: ["Staking AIR", "Burning EOS", "Saying GM daily"],
+      correctAnswer: "Burning EOS"
+    },
+    {
+      id: 4,
+      question: "What is the official contract address (CA) of Eth OS?",
+      options: ["0xdAC17F958D2ee523a2206206994597C13D831ec7", "0x8164B40840418C77A68F6f9EEdB5202b36d8b288", "0xfA9Ff5581cC458D3ba3983308F93417E5Fde2013"],
+      correctAnswer: "0x8164B40840418C77A68F6f9EEdB5202b36d8b288"
+    },
+    {
+      id: 5,
+      question: "What strategy is key to winning the farming game according to Eth OS?",
+      options: ["Selling early for quick profits", "Compounding gains across epochs", "Holding only during the last epoch"],
+      correctAnswer: "Compounding gains across epochs"
+    }
+  ]
+};
+
+type GameMode = 'easy' | 'medium' | 'hard' | null;
+type GameState = 'menu' | 'start' | 'playing' | 'gameOver' | 'success';
+
+export default function Home() {
+  const [gameMode, setGameMode] = useState<GameMode>(null);
+  const [gameState, setGameState] = useState<GameState>('menu');
+  const [showInfo, setShowInfo] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(180);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isAnswered, setIsAnswered] = useState(false);
+
+  const currentQuestions = gameMode ? quizData[gameMode] : [];
+  const currentQuestion = currentQuestions[currentQuestionIndex];
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    
+    if (gameState === 'playing' && timeLeft > 0) {
+      timer = setTimeout(() => {
+        setTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && gameState === 'playing') {
+      handleGameOver();
+    }
+
+    return () => clearTimeout(timer);
+  }, [timeLeft, gameState]);
+
+  const startGame = (mode: GameMode) => {
+    setGameMode(mode);
+    setGameState('playing');
+    setCurrentQuestionIndex(0);
+    setLives(3);
+    setScore(0);
+    setTimeLeft(180);
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+  };
+
+  const handleStart = () => {
+    setGameState('start');
+  };
+
+  const handleInfo = () => {
+    setShowInfo(!showInfo);
+  };
+
+  const handleAnswerSelect = (answer: string) => {
+    if (isAnswered) return;
+    
+    setSelectedAnswer(answer);
+    setIsAnswered(true);
+
+    setTimeout(() => {
+      if (answer === currentQuestion.correctAnswer) {
+        setScore(prev => prev + 1);
+      } else {
+        setLives(prev => prev - 1);
+      }
+
+      setTimeout(() => {
+        if (answer === currentQuestion.correctAnswer) {
+          if (currentQuestionIndex + 1 < currentQuestions.length) {
+            setCurrentQuestionIndex(prev => prev + 1);
+            setTimeLeft(180);
+            setSelectedAnswer(null);
+            setIsAnswered(false);
+          } else {
+            handleSuccess();
+          }
+        } else {
+          if (lives - 1 <= 0) {
+            handleGameOver();
+          } else {
+            if (currentQuestionIndex + 1 < currentQuestions.length) {
+              setCurrentQuestionIndex(prev => prev + 1);
+              setTimeLeft(180);
+              setSelectedAnswer(null);
+              setIsAnswered(false);
+            } else {
+              handleSuccess();
+            }
+          }
+        }
+      }, 1000);
+    }, 1000);
+  };
+
+  const handleGameOver = () => {
+    setGameState('gameOver');
+  };
+
+  const handleSuccess = () => {
+    setGameState('success');
+  };
+
+  const resetGame = () => {
+    setGameMode(null);
+    setGameState('menu');
+    setCurrentQuestionIndex(0);
+    setLives(3);
+    setScore(0);
+    setTimeLeft(180);
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+  };
+
+  const backToMenu = () => {
+    setGameMode(null);
+    setGameState('menu');
+    setShowInfo(false);
+  };
+
+  const renderMenu = () => (
+    <div className="min-h-screen bg-[#9BAAED] flex flex-col items-center justify-center p-4">
+      <div className="bg-transparent rounded-2xl p-8 max-w-md w-full mb-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-4">Eth OS Quiz Challenge</h1>
+          <p className="text-white mb-4">Test your knowledge about the Ethereum OS and prove you're a true visionary</p>
+          <p className="text-sm text-white opacity-80">Tap Start below to begin the quiz and test your Eth OS knowledge</p>
+        </div>
+      </div>
+
+      {/* Bottom Icons */}
+      <div className="flex space-x-8 w-full max-w-md justify-center">
+        <button
+          onClick={handleStart}
+          className="flex flex-col items-center space-y-2 transition-transform duration-200 hover:scale-110"
+        >
+          <Image
+            src="/img/playos.png"
+            alt="play"
+            width={48}
+            height={48}
+            className="drop-shadow-lg"
+          />
+          <span className="text-white font-semibold text-lg">Start</span>
+        </button>
+        
+        <button
+          onClick={handleInfo}
+          className="flex flex-col items-center space-y-2 transition-transform duration-200 hover:scale-110"
+        >
+          <svg className="w-12 h-12 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-white font-semibold text-lg">Info</span>
+        </button>
+      </div>
+
+      {/* Info Card */}
+      {showInfo && (
+        <div className="fixed inset-0 bg-[#9BAAED] bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div className="text-center mb-6">
+                             <Image
+                 src="https://avatars.githubusercontent.com/u/113094795?s=400&u=09f3e0e5f27350cd376caa27f7aa65cf46c9384c&v=4"
+                 alt="Developer"
+                 width={80}
+                 height={80}
+                 className="rounded-full mx-auto mb-4"
+               />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Developer Info</h2>
+              <p className="text-gray-600 mb-4">update web soon</p>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              <a
+                href="https://github.com/nekowawolf/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center space-x-2 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                <span>: nekowawolf</span>
+              </a>
+              
+              <a
+                href="https://x.com/0xNekowawolf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center space-x-2 bg-black hover:bg-gray-900 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                <span>: 0xNekowawolf</span>
+              </a>
+            </div>
+            
+            <button
+              onClick={handleInfo}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderStart = () => (
+    <div className="min-h-screen bg-[#9BAAED] flex items-center justify-center p-4">
+      <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-md w-full shadow-2xl">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">🎯 Choose Difficulty</h1>
+          <p className="text-gray-600">Select your challenge level and test your Eth OS knowledge!</p>
+        </div>
+        
+        <div className="space-y-4 mb-6">
+          <button
+            onClick={() => startGame('easy')}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl text-lg transition-colors duration-200 shadow-lg"
+          >
+            Easy
+          </button>
+          
+          <button
+            onClick={() => startGame('medium')}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl text-lg transition-colors duration-200 shadow-lg"
+          >
+            Medium
+          </button>
+          
+          <button
+            onClick={() => startGame('hard')}
+            className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-6 rounded-xl text-lg transition-colors duration-200 shadow-lg"
+          >
+            Hard
+          </button>
+        </div>
+
+        <button
+          onClick={backToMenu}
+          className="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-xl text-lg transition-colors duration-200"
+        >
+          Back to Menu
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderGame = () => (
+    <div className="min-h-screen bg-[#9BAAED] flex items-center justify-center p-4">
+      <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-2xl w-full shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-semibold text-gray-700">Lives:</span>
+            <div className="flex space-x-1">
+              {[...Array(3)].map((_, i) => (
+                <Image
+                  key={i}
+                  src="/img/heartos.png"
+                  alt="heart"
+                  width={24}
+                  height={24}
+                  className={i < lives ? 'opacity-100' : 'opacity-30'}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-800">{score}</div>
+            <div className="text-sm text-gray-600">Score</div>
+          </div>
+          
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-600">
+              {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+            </div>
+            <div className="text-sm text-gray-600">Time</div>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Question {currentQuestionIndex + 1} of {currentQuestions.length}</span>
+            <span>{gameMode?.toUpperCase()}</span>
+          </div>
+          <div className="w-full bg-gray-300 rounded-full h-2">
+            <div 
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Question */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-6 leading-relaxed">
+            {currentQuestion.question}
+          </h2>
+          
+          <div className="space-y-3">
+            {currentQuestion.options.map((option, index) => (
+              <button
+                key={index}
+                onClick={() => handleAnswerSelect(option)}
+                disabled={isAnswered}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-200 ${
+                  selectedAnswer === option
+                    ? option === currentQuestion.correctAnswer
+                      ? 'border-green-500 bg-green-100'
+                      : 'border-red-500 bg-red-100'
+                    : isAnswered && option === currentQuestion.correctAnswer
+                    ? 'border-green-500 bg-green-100'
+                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                } ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span className="font-medium text-gray-800 break-words leading-relaxed">{option}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderGameOver = () => (
+    <div className="min-h-screen bg-[#9BAAED] flex items-center justify-center p-4">
+      <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+        <h2 className="text-3xl font-bold text-red-600 mb-4">Game Over!</h2>
+        <div className="mb-6">
+          <p className="text-lg text-gray-700 mb-2">Final Score: <span className="font-bold text-blue-600">{score}</span></p>
+          <p className="text-gray-600">Lives Remaining: <span className="font-bold">{lives}</span></p>
+        </div>
+        <button
+          onClick={resetGame}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl text-lg transition-colors duration-200"
+        >
+          Try Again
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderSuccess = () => (
+    <div className="min-h-screen bg-[#9BAAED] flex items-center justify-center p-4">
+      <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+        <h2 className="text-3xl font-bold text-green-600 mb-4">Congratulations!</h2>
+        <div className="mb-6">
+          <p className="text-lg text-gray-700 mb-2">Final Score: <span className="font-bold text-blue-600">{score}/{currentQuestions.length}</span></p>
+          <p className="text-gray-600">Lives Remaining: <span className="font-bold">{lives}</span></p>
+          <p className="text-sm text-gray-500 mt-2">You completed the {gameMode} mode!</p>
+        </div>
+        <button
+          onClick={resetGame}
+          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl text-lg transition-colors duration-200"
+        >
+          Play Again
+        </button>
+      </div>
+    </div>
+  );
+
+  switch (gameState) {
+    case 'menu':
+      return renderMenu();
+    case 'start':
+      return renderStart();
+    case 'playing':
+      return renderGame();
+    case 'gameOver':
+      return renderGameOver();
+    case 'success':
+      return renderSuccess();
+    default:
+      return renderMenu();
+  }
+} 
