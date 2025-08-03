@@ -459,24 +459,48 @@ export default function Home() {
     </div>
   );
 
-  const renderSuccess = () => (
-    <div className="min-h-screen bg-[#9BAAED] flex items-center justify-center p-4">
-      <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
-        <h2 className="text-3xl font-bold text-green-600 mb-4">Congratulations!</h2>
-        <div className="mb-6">
-          <p className="text-lg text-gray-700 mb-2">Final Score: <span className="font-bold text-blue-600">{score}/{currentQuestions.length}</span></p>
-          <p className="text-gray-600">Lives Remaining: <span className="font-bold">{lives}</span></p>
-          <p className="text-sm text-gray-500 mt-2">You completed the {gameMode} mode!</p>
+  const renderSuccess = () => {
+    const shareText = `🎉 Just completed the ${gameMode} mode in Eth OS Quiz Challenge! 
+🏆 Final Score: ${score}/${currentQuestions.length}
+❤️ Lives Remaining: ${lives}
+🎮 Test your knowledge: https://ethos-quiz.vercel.app/`;
+
+    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+
+    return (
+      <div className="min-h-screen bg-[#9BAAED] flex items-center justify-center p-4">
+        <div className="bg-[#DEDEDE] rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+          <h2 className="text-3xl font-bold text-green-600 mb-4">Congratulations!</h2>
+          <div className="mb-6">
+            <p className="text-lg text-gray-700 mb-2">Final Score: <span className="font-bold text-blue-600">{score}/{currentQuestions.length}</span></p>
+            <p className="text-gray-600">Lives Remaining: <span className="font-bold">{lives}</span></p>
+            <p className="text-sm text-gray-500 mt-2">You completed the {gameMode} mode!</p>
+          </div>
+          
+          <div className="space-y-3">
+            <a
+              href={shareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center space-x-2 bg-black hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-xl text-lg transition-colors duration-200 w-full"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              <span>Share to X</span>
+            </a>
+            
+            <button
+              onClick={resetGame}
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl text-lg transition-colors duration-200 w-full"
+            >
+              Play Again
+            </button>
+          </div>
         </div>
-        <button
-          onClick={resetGame}
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl text-lg transition-colors duration-200"
-        >
-          Play Again
-        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   switch (gameState) {
     case 'menu':
