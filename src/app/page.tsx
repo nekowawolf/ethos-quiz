@@ -128,8 +128,9 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState(180);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[]>([]);
 
-  const currentQuestions = gameMode ? quizData[gameMode] : [];
+  const currentQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : (gameMode ? quizData[gameMode] : []);
   const currentQuestion = currentQuestions[currentQuestionIndex];
 
   useEffect(() => {
@@ -147,6 +148,10 @@ export default function Home() {
   }, [timeLeft, gameState]);
 
   const startGame = (mode: GameMode) => {
+    const questions = quizData[mode!];
+    const shuffled = [...questions].sort(() => Math.random() - 0.5);
+    setShuffledQuestions(shuffled);
+    
     setGameMode(mode);
     setGameState('playing');
     setCurrentQuestionIndex(0);
@@ -261,9 +266,13 @@ export default function Home() {
           onClick={handleInfo}
           className="flex flex-col items-center space-y-2 transition-transform duration-200 hover:scale-110"
         >
-          <svg className="w-12 h-12 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+          <Image
+            src="/img/info.png"
+            alt="info"
+            width={48}
+            height={48}
+            className="drop-shadow-lg"
+          />
           <span className="text-white font-semibold text-lg">Info</span>
         </button>
       </div>
